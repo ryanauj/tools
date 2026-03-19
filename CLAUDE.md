@@ -13,9 +13,8 @@ This is a monorepo containing independent tools and libraries, each in its own s
 - Create a new top-level directory with a descriptive name (kebab-case)
 - Always include: README.md, CLAUDE.md, .gitignore
 - The CLAUDE.md should document: build, test, and lint commands, plus any conventions
-- Keep tools independent — no cross-tool dependencies
+- Tools may depend on other tools in the repo during development, but published artifacts should always be usable standalone
 
 ## General conventions
 
-- Prefer simple, minimal implementations
 - Each tool should work standalone without needing anything else in this repo
