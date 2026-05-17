@@ -18,3 +18,7 @@ This is a monorepo containing independent tools and libraries, each in its own s
 ## General conventions
 
 - Each tool should work standalone without needing anything else in this repo
+
+## Sections
+
+- `web/` — client-side-only tools (pure HTML/CSS/JS). Deployed to GitHub Pages via `.github/workflows/pages.yml`. See `web/CLAUDE.md` for conventions.

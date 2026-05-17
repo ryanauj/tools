@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>speedtest &amp; network viewer</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <header class="site-header">
+      <h1><a href="../" class="back">tools / web</a> / speedtest</h1>
+      <span class="meta">in-browser</span>
+    </header>
+
+    <section class="network-panel" id="network-panel">
+      <h2>Network</h2>
+      <dl class="kv">
+        <dt>Public IP</dt><dd data-field="ip">…</dd>
+        <dt>Location</dt><dd data-field="loc">…</dd>
+        <dt>ISP / ASN</dt><dd data-field="asn">…</dd>
+        <dt>Connection</dt><dd data-field="conn">…</dd>
+        <dt>Effective type</dt><dd data-field="effective">…</dd>
+        <dt>Save-Data</dt><dd data-field="savedata">…</dd>
+        <dt>User agent</dt><dd data-field="ua">…</dd>
+      </dl>
+    </section>
+
+    <section class="test-panel">
+      <div class="readouts">
+        <div class="readout">
+          <div class="readout-label">Ping</div>
+          <div class="readout-value" data-readout="ping"><span class="num">—</span><span class="unit">ms</span></div>
+          <div class="readout-sub" data-readout="jitter">jitter —</div>
+        </div>
+        <div class="readout">
+          <div class="readout-label">Download</div>
+          <div class="readout-value" data-readout="download"><span class="num">—</span><span class="unit">Mbps</span></div>
+          <div class="readout-sub" data-readout="download-sub">—</div>
+        </div>
+        <div class="readout">
+          <div class="readout-label">Upload</div>
+          <div class="readout-value" data-readout="upload"><span class="num">—</span><span class="unit">Mbps</span></div>
+          <div class="readout-sub" data-readout="upload-sub">—</div>
+        </div>
+      </div>
+
+      <div class="progress" aria-hidden="true">
+        <div class="progress-bar" id="progress-bar"></div>
+      </div>
+
+      <div class="controls">
+        <button id="start-btn" type="button">Start test</button>
+        <div class="status" id="status">Idle.</div>
+      </div>
+    </section>
+
+    <details class="about">
+      <summary>How this works</summary>
+      <p>
+        Latency, download, and upload are measured against
+        <a href="https://speed.cloudflare.com/" target="_blank" rel="noreferrer">speed.cloudflare.com</a> —
+        Cloudflare's CORS-enabled speedtest endpoints. Network metadata comes from
+        <code>speed.cloudflare.com/meta</code>. Everything else (browser, connection type) is read from
+        the page locally; no third-party analytics are loaded.
+      </p>
+      <p>
+        Results reflect what the browser can do over a small number of parallel HTTPS connections.
+        Real link capacity is usually higher than what a single browser tab can saturate.
+      </p>
+    </details>
+
+    <footer class="footer">
+      <a href="../">← back to tools</a>
+    </footer>
+  </div>
+
+  <script src="speedtest.js" type="module"></script>
+</body>
+</html>
