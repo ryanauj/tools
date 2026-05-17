@@ -32,3 +32,7 @@ tools/
 - Each subdirectory is independent — its own language, dependencies, and build system
 - No shared build tooling or dependency management across tools
 - Keep each tool focused and small
+
+## Sections
+
+- **`web/`** — client-side-only tools (pure HTML/CSS/JS) published to GitHub Pages via `.github/workflows/pages.yml`. See `web/README.md`.
