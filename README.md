@@ -35,4 +35,4 @@ tools/
 
 ## Sections
 
-- **`web/`** — client-side-only tools (pure HTML/CSS/JS) published to GitHub Pages via `.github/workflows/pages.yml`. See `web/README.md`.
+- **`web/`** — client-side-only tools (pure HTML/CSS/JS) published to GitHub Pages via `.github/workflows/pages.yml`. Live at [ryanauj.github.io/tools](https://ryanauj.github.io/tools/). See `web/README.md`.
