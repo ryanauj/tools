@@ -77,6 +77,7 @@
           <select id="template">
             <option value="readme">README only (auto-init)</option>
             <option value="empty">Empty (you'll push the first commit)</option>
+            <option value="vite-react-ts">Vite + React + TypeScript + pnpm + GH Pages</option>
           </select>
         </label>
       </div>
@@ -91,7 +92,9 @@
         </label>
       </div>
       <p class="hint">
-        Future templates (Vite + GitHub Pages workflow, etc.) will land here.
+        Scaffold templates auto-init the repo, then commit their own file set in a single
+        commit. They override any <code>.gitignore</code> template above.
+        Templates that publish to Pages also flip <em>Settings → Pages → Source</em> to <em>GitHub Actions</em> for you.
       </p>
     </section>
 

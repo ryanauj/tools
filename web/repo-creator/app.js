@@ -138,14 +138,23 @@ async function createRepo() {
   const visibility = document.querySelector('input[name="visibility"]:checked').value;
   const isOrg = owner.toLowerCase() !== viewer.login.toLowerCase();
   const template = els.template.value;
-  const autoInit = template !== "empty";
+
+  let scaffold = null;
+  if (template !== "readme" && template !== "empty") {
+    try {
+      scaffold = await import(`./templates/${template}.js`);
+    } catch (e) {
+      return setStatus(els.createStatus, `Unknown template: ${template}`, "err");
+    }
+  }
+  const autoInit = template !== "empty" || (scaffold && scaffold.requiresInit);
 
   const body = {
     name,
     description: els.description.value.trim() || undefined,
     private: visibility === "private",
     auto_init: autoInit,
-    gitignore_template: autoInit && els.gitignore.value.trim() ? els.gitignore.value.trim() : undefined,
+    gitignore_template: autoInit && !scaffold && els.gitignore.value.trim() ? els.gitignore.value.trim() : undefined,
     license_template: autoInit && els.license.value.trim() ? els.license.value.trim().toLowerCase() : undefined,
   };
 
@@ -162,6 +171,41 @@ async function createRepo() {
     setStatus(els.createStatus, "Failed.", "err");
     els.createBtn.disabled = false;
     return;
+  }
+
+  let pagesUrl = null;
+  if (scaffold) {
+    const scaffoldLog = addLog(`Committing ${scaffold.name} scaffold…`, "working");
+    try {
+      const files = scaffold.files(repo.name);
+      const commit = await commitFiles(
+        token,
+        repo.owner.login,
+        repo.name,
+        repo.default_branch,
+        files,
+        scaffold.commitMessage || `Scaffold ${scaffold.name}`,
+      );
+      scaffoldLog.textContent = `Committed ${files.length} files in ${commit.sha.slice(0, 7)}.`;
+      scaffoldLog.className = "ok";
+    } catch (e) {
+      scaffoldLog.textContent = `Scaffold failed: ${e.message}`;
+      scaffoldLog.className = "err";
+    }
+
+    if (scaffold.configurePages) {
+      const pagesLog = addLog("Enabling GitHub Pages (source = Actions)…", "working");
+      try {
+        const page = await enablePages(token, repo.owner.login, repo.name);
+        pagesUrl = page && page.html_url ? page.html_url
+          : `https://${repo.owner.login}.github.io/${repo.name}/`;
+        pagesLog.textContent = `Pages enabled. Will publish to ${pagesUrl} after first deploy run.`;
+        pagesLog.className = "ok";
+      } catch (e) {
+        pagesLog.textContent = `Pages setup failed: ${e.message}`;
+        pagesLog.className = "err";
+      }
+    }
   }
 
   let rulesetUrl = null;
@@ -186,8 +230,54 @@ async function createRepo() {
     <div>Repository: <a href="${repo.html_url}" target="_blank" rel="noreferrer">${repo.html_url}</a></div>
     <div>Clone: <code>${repo.clone_url}</code></div>
     ${rulesetUrl ? `<div>Ruleset: <a href="${rulesetUrl}" target="_blank" rel="noreferrer">${rulesetUrl}</a></div>` : ""}
+    ${pagesUrl ? `<div>Pages URL: <a href="${pagesUrl}" target="_blank" rel="noreferrer">${pagesUrl}</a></div>` : ""}
   `;
   els.createBtn.disabled = false;
+}
+
+async function commitFiles(token, owner, repo, branch, files, message) {
+  const o = encodeURIComponent(owner);
+  const r = encodeURIComponent(repo);
+  const ref = await gh(`/repos/${o}/${r}/git/ref/heads/${encodeURIComponent(branch)}`, { token });
+  const parentSha = ref.object.sha;
+  const parentCommit = await gh(`/repos/${o}/${r}/git/commits/${parentSha}`, { token });
+  const tree = await gh(`/repos/${o}/${r}/git/trees`, {
+    method: "POST",
+    token,
+    body: {
+      base_tree: parentCommit.tree.sha,
+      tree: files.map((f) => ({
+        path: f.path,
+        mode: "100644",
+        type: "blob",
+        content: f.content,
+      })),
+    },
+  });
+  const commit = await gh(`/repos/${o}/${r}/git/commits`, {
+    method: "POST",
+    token,
+    body: { message, tree: tree.sha, parents: [parentSha] },
+  });
+  await gh(`/repos/${o}/${r}/git/refs/heads/${encodeURIComponent(branch)}`, {
+    method: "PATCH",
+    token,
+    body: { sha: commit.sha },
+  });
+  return commit;
+}
+
+async function enablePages(token, owner, repo) {
+  const path = `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/pages`;
+  try {
+    return await gh(path, { method: "POST", token, body: { build_type: "workflow" } });
+  } catch (e) {
+    if (e.status === 409) {
+      await gh(path, { method: "PUT", token, body: { build_type: "workflow" } });
+      return gh(path, { token });
+    }
+    throw e;
+  }
 }
 
 async function createRuleset(token, owner, repo) {

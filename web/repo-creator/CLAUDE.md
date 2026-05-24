@@ -6,7 +6,8 @@ Client-side tool to create a GitHub repo + branch ruleset via the REST API.
 
 - `index.html` — form UI.
 - `styles.css` — extends `../styles.css`.
-- `app.js` — ES module: token verification, repo creation, ruleset creation.
+- `app.js` — ES module: token verification, repo creation, scaffold commit, Pages setup, ruleset creation.
+- `templates/<id>.js` — scaffold modules, dynamically `import()`ed by id. Each exports `id`, `name`, `requiresInit`, `configurePages`, `commitMessage`, and `files(repoName)`.
 
 ## Conventions
 
