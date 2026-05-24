@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>repo creator</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <header class="site-header">
+      <h1><a href="../" class="back">tools / web</a> / repo-creator</h1>
+      <span class="meta">in-browser</span>
+    </header>
+
+    <p class="lede">
+      Create a new GitHub repository with a branch protection ruleset already in place — PRs required, reviews required, admins bypass. Runs entirely in your browser; your token never leaves this page.
+    </p>
+
+    <section class="panel">
+      <h2>Token</h2>
+      <p class="hint">
+        Needs a <a href="https://github.com/settings/tokens?type=beta" target="_blank" rel="noreferrer">fine-grained PAT</a> with
+        <em>Administration: Read &amp; Write</em> (to create repos and rulesets) and <em>Contents: Read &amp; Write</em> for the target account.
+        A <a href="https://github.com/settings/tokens/new?scopes=repo,admin:org" target="_blank" rel="noreferrer">classic PAT with <code>repo</code> scope</a> also works.
+      </p>
+      <div class="row">
+        <label class="grow">
+          <span>Personal access token</span>
+          <input type="password" id="token" autocomplete="off" spellcheck="false" placeholder="ghp_… or github_pat_…">
+        </label>
+        <label class="check">
+          <input type="checkbox" id="remember-token">
+          <span>Remember in this browser (localStorage)</span>
+        </label>
+      </div>
+      <div class="row">
+        <button type="button" id="verify-btn">Verify token</button>
+        <div class="status" id="token-status">Not verified.</div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Repository</h2>
+      <div class="row">
+        <label class="grow">
+          <span>Owner (user or org)</span>
+          <input type="text" id="owner" placeholder="ryanauj or my-org" spellcheck="false">
+        </label>
+        <label class="grow">
+          <span>Name</span>
+          <input type="text" id="name" placeholder="my-new-repo" spellcheck="false">
+        </label>
+      </div>
+      <label class="block">
+        <span>Description (optional)</span>
+        <input type="text" id="description" placeholder="What this repo is for">
+      </label>
+      <div class="row">
+        <label class="check">
+          <input type="radio" name="visibility" value="public" checked>
+          <span>Public</span>
+        </label>
+        <label class="check">
+          <input type="radio" name="visibility" value="private">
+          <span>Private</span>
+        </label>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Initial contents</h2>
+      <div class="row">
+        <label class="grow">
+          <span>Template</span>
+          <select id="template">
+            <option value="readme">README only (auto-init)</option>
+            <option value="empty">Empty (you'll push the first commit)</option>
+            <option value="vite-react-ts">Vite + React + TypeScript + pnpm + GH Pages</option>
+          </select>
+        </label>
+      </div>
+      <div class="row">
+        <label class="grow">
+          <span>.gitignore template (optional)</span>
+          <input type="text" id="gitignore" placeholder="Node, Python, Go, …" spellcheck="false">
+        </label>
+        <label class="grow">
+          <span>License (optional)</span>
+          <input type="text" id="license" placeholder="mit, apache-2.0, …" spellcheck="false">
+        </label>
+      </div>
+      <p class="hint">
+        Scaffold templates auto-init the repo, then commit their own file set in a single
+        commit. They override any <code>.gitignore</code> template above.
+        Templates that publish to Pages also flip <em>Settings → Pages → Source</em> to <em>GitHub Actions</em> for you.
+      </p>
+    </section>
+
+    <section class="panel">
+      <h2>Branch protection</h2>
+      <p class="hint">
+        Creates a repository ruleset targeting the default branch.
+        Empty repos can't have rulesets yet — we'll skip this step if you pick "Empty" above.
+      </p>
+      <div class="row">
+        <label class="grow">
+          <span>Required approving reviews</span>
+          <input type="number" id="reviews" min="0" max="6" value="1">
+        </label>
+        <label class="check">
+          <input type="checkbox" id="dismiss-stale" checked>
+          <span>Dismiss stale reviews on new push</span>
+        </label>
+      </div>
+      <div class="row">
+        <label class="check">
+          <input type="checkbox" id="require-codeowner">
+          <span>Require code owner review</span>
+        </label>
+        <label class="check">
+          <input type="checkbox" id="require-last-push" checked>
+          <span>Require approval of most recent push</span>
+        </label>
+      </div>
+      <div class="row">
+        <label class="check">
+          <input type="checkbox" id="block-force-push" checked>
+          <span>Block force pushes</span>
+        </label>
+        <label class="check">
+          <input type="checkbox" id="block-deletion" checked>
+          <span>Block branch deletion</span>
+        </label>
+      </div>
+      <div class="row">
+        <label class="check">
+          <input type="checkbox" id="admin-bypass" checked>
+          <span>Let repository admins bypass (that's you)</span>
+        </label>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="row">
+        <button type="button" id="create-btn" class="primary">Create repository</button>
+        <div class="status" id="create-status">Idle.</div>
+      </div>
+    </section>
+
+    <section class="panel log-panel" id="log-panel" hidden>
+      <h2>Log</h2>
+      <ol class="log" id="log"></ol>
+      <div class="result" id="result" hidden></div>
+    </section>
+
+    <details class="about">
+      <summary>How this works</summary>
+      <p>
+        The page talks to <code>api.github.com</code> directly using your PAT. The repository is created via
+        <code>POST /user/repos</code> or <code>POST /orgs/{org}/repos</code>, then a
+        <a href="https://docs.github.com/en/rest/repos/rules" target="_blank" rel="noreferrer">repository ruleset</a>
+        is created on the default branch with <code>pull_request</code>, <code>non_fast_forward</code>, and
+        <code>deletion</code> rules as configured.
+      </p>
+      <p>
+        "Admin bypass" adds the repository <code>Admin</code> role (id 5) to the ruleset's <code>bypass_actors</code>,
+        so anyone with admin (you, as the owner) can push or merge without going through the ruleset.
+      </p>
+      <p>
+        Your token is kept in memory by default. The "Remember" checkbox stores it in this browser's
+        <code>localStorage</code> — convenient, but anything running on this origin could read it.
+      </p>
+    </details>
+
+    <footer class="footer">
+      <a href="../">← back to tools</a>
+    </footer>
+  </div>
+
+  <script src="app.js" type="module"></script>
+</body>
+</html>
